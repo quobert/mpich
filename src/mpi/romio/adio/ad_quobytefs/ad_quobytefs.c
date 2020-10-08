@@ -53,8 +53,7 @@ static char *extract_registry(const char *filename, int *error_code)
     const char *prefix = "//";
     int prefix_size = strlen(prefix);
     if (!strncmp(filename, prefix, prefix_size)) {
-        *error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_FATAL, myname,
-                                           __LINE__, MPI_ERR_NAME, "Invalid uri", 0);
+        return NULL;
     }
     char *extract_filename = (char *) filename + prefix_size;
     char *tmp = strchr(extract_filename, '/');
@@ -76,7 +75,7 @@ void ADIOI_QUOBYTEFS_CreateAdapter(const char *filename, int *error_code)
     static char myname[] = "ADIOI_QUOBYTEFS_CreateAdapter";
 
     char *registry = extract_registry(filename, error_code);
-    if (registry == NULL || *error_code != MPI_SUCCESS) {
+    if (*error_code != MPI_SUCCESS) {
         return;
     }
     const char process_name[] = "adio_ffffffff";
@@ -86,7 +85,9 @@ void ADIOI_QUOBYTEFS_CreateAdapter(const char *filename, int *error_code)
     snprintf(name_buffer, strlen(process_name), "adio_%x", rank);
     quobyte_set_process_name(name_buffer);
     int create_status = quobyte_create_adapter(registry);
-    MPL_external_free(registry);
+    if (registry != NULL) {
+        MPL_external_free(registry);
+    }
     if (create_status != EISCONN && create_status != 0) {
         *error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_FATAL, myname,
                                            __LINE__, MPI_ERR_IO,
